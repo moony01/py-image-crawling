@@ -1,2 +1,2 @@
-# py-image-crawling
-py-image-crawling
+# 파이썬을 활용한 이미지 크롤링 사용방법
+준비중....
