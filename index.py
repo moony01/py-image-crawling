@@ -168,42 +168,89 @@ def crawling_img(name, category, max_count=100):
 # 상견례 얼굴상 테스트 - 학습 데이터 수집
 # ============================================
 
+# 여자 연예인 리스트
+FEMALE_FREEPASS = [
+    "박보영 얼굴",
+    "박은빈 얼굴",
+    "김민주 아이즈원 얼굴",
+    "미나 트와이스 얼굴",
+    "카즈하 르세라핌 얼굴",
+    "효정 오마이걸 얼굴",
+]
+
+FEMALE_MOONJEONBAKDAE = [
+    "이채영 프로미스나인 얼굴",
+    "미미 오마이걸 얼굴",
+    "닝닝 에스파 얼굴",
+    "채영 트와이스 얼굴",
+    "제니 블랙핑크 얼굴",
+]
+
+# 남자 연예인 리스트
+MALE_FREEPASS = [
+    "진 BTS 얼굴",
+    "임시완 얼굴",
+    "송중기 얼굴",
+    "박보검 얼굴",
+    "차은우 얼굴",
+]
+
+MALE_MOONJEONBAKDAE = [
+    "덱스 얼굴",
+    "산 에이티즈 얼굴",
+    "창균 몬스타엑스 얼굴",
+    "연준 투바투 얼굴",
+    "뷔 BTS 얼굴",
+]
+
+
 if __name__ == "__main__":
+    import argparse
     
-    # 프리패스상 (호감형) 연예인 리스트
-    freepass_celebrities = [
-        "차은우 얼굴",
-        "원빈 얼굴",
-        "송중기 얼굴",
-        "박보검 얼굴",
-        "송혜교 얼굴",
-        "수지 얼굴",
-        "아이유 얼굴",
-        "김태희 얼굴",
-    ]
-    
-    # 문전박대상 (밈으로 유명한) 연예인 리스트
-    # 주의: 실제 비호감이 아니라 밈으로 유명해진 케이스들
-    moonjeonbakdae_celebrities = [
-        "이채영 프로미스나인 얼굴",
-        # 추가 필요시 여기에 추가
-    ]
+    parser = argparse.ArgumentParser(description='상견례 얼굴상 테스트 이미지 크롤러')
+    parser.add_argument('--gender', choices=['male', 'female', 'all'], default='all',
+                        help='크롤링할 성별 (male/female/all)')
+    parser.add_argument('--count', type=int, default=50,
+                        help='연예인당 이미지 수 (기본: 50)')
+    args = parser.parse_args()
     
     print("=" * 50)
     print("🎭 상견례 얼굴상 테스트 - 이미지 크롤러")
     print("=" * 50)
     
-    # 프리패스상 이미지 수집
-    print("\n👍 [프리패스상] 이미지 수집 시작...")
-    for celeb in freepass_celebrities:
-        crawling_img(celeb, "프리패스상", max_count=50)
+    # 여자 연예인 크롤링
+    if args.gender in ['female', 'all']:
+        print("\n" + "=" * 50)
+        print("👩 [여자] 이미지 수집 시작...")
+        print("=" * 50)
+        
+        print("\n👍 [여자 프리패스상]")
+        for celeb in FEMALE_FREEPASS:
+            crawling_img(celeb, "female_프리패스상", max_count=args.count)
+        
+        print("\n👎 [여자 문전박대상]")
+        for celeb in FEMALE_MOONJEONBAKDAE:
+            crawling_img(celeb, "female_문전박대상", max_count=args.count)
     
-    # 문전박대상 이미지 수집
-    print("\n👎 [문전박대상] 이미지 수집 시작...")
-    for celeb in moonjeonbakdae_celebrities:
-        crawling_img(celeb, "문전박대상", max_count=50)
+    # 남자 연예인 크롤링
+    if args.gender in ['male', 'all']:
+        print("\n" + "=" * 50)
+        print("👨 [남자] 이미지 수집 시작...")
+        print("=" * 50)
+        
+        print("\n👍 [남자 프리패스상]")
+        for celeb in MALE_FREEPASS:
+            crawling_img(celeb, "male_프리패스상", max_count=args.count)
+        
+        print("\n👎 [남자 문전박대상]")
+        for celeb in MALE_MOONJEONBAKDAE:
+            crawling_img(celeb, "male_문전박대상", max_count=args.count)
     
     print("\n" + "=" * 50)
     print("✅ 크롤링 완료!")
-    print(f"📁 저장 위치: ./dataset/프리패스상/, ./dataset/문전박대상/")
+    print("📁 저장 위치:")
+    print("   ./dataset/female_프리패스상/")
+    print("   ./dataset/female_문전박대상/")
+    print("   ./dataset/male_프리패스상/")
+    print("   ./dataset/male_문전박대상/")
     print("=" * 50)
