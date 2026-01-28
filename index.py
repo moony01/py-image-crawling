@@ -1,8 +1,10 @@
 """
-상견례 얼굴상 테스트 - 이미지 크롤러
-Teachable Machine 학습용 이미지 수집
+Sanggyeonrye Face Test - Image Crawler
+For Teachable Machine training data
 
-사용법: python index.py
+Usage: python index.py
+       python index.py --gender female
+       python index.py --gender male --count 100
 """
 
 from selenium import webdriver
@@ -24,9 +26,9 @@ def create_directory(directory):
     try:
         if not os.path.exists(directory):
             os.makedirs(directory)
-            print(f"📁 폴더 생성: {directory}")
+            print(f"[FOLDER] Created: {directory}")
     except OSError as e:
-        print(f"❌ 폴더 생성 실패: {e}")
+        print(f"[ERROR] Failed to create folder: {e}")
 
 
 def crawling_img(name, category, max_count=100):
@@ -38,7 +40,7 @@ def crawling_img(name, category, max_count=100):
         category: 저장 폴더명 (예: "프리패스상", "문전박대상")
         max_count: 최대 이미지 수 (기본 100장)
     """
-    print(f"\n🔍 크롤링 시작: {name} → {category}")
+    print(f"\n[START] Crawling: {name} -> {category}")
     
     # Chrome 옵션 설정
     options = webdriver.ChromeOptions()
@@ -89,18 +91,18 @@ def crawling_img(name, category, max_count=100):
             last_height = new_height
             scroll_count += 1
         
-        # 이미지 요소 찾기 (여러 셀렉터 시도)
-        selectors = [".rg_i.Q4LuWd", "img.rg_i", "[data-src]"]
+        # 이미지 요소 찾기 (2024+ Google Images selectors)
+        selectors = ["img.YQ4gaf", "img.rg_i", ".rg_i.Q4LuWd", "[data-src]"]
         imgs = []
         
         for selector in selectors:
             imgs = driver.find_elements(By.CSS_SELECTOR, selector)
             if len(imgs) > 0:
-                print(f"✅ 셀렉터 '{selector}'로 {len(imgs)}개 이미지 발견")
+                print(f"[OK] Found {len(imgs)} images with '{selector}'")
                 break
         
         if not imgs:
-            print("❌ 이미지를 찾을 수 없습니다. Google 페이지 구조가 변경되었을 수 있습니다.")
+            print("[ERROR] No images found. Google page structure may have changed.")
             return
         
         # 저장 폴더 생성 (상대 경로)
@@ -119,25 +121,37 @@ def crawling_img(name, category, max_count=100):
                 img.click()
                 time.sleep(1.5)
                 
-                # 고화질 이미지 URL 추출 (여러 XPath 시도)
-                xpaths = [
-                    '//img[contains(@class, "sFlh5c")]',
-                    '//img[contains(@class, "n3VNCb")]',
-                    '//img[contains(@class, "iPVvYb")]',
-                    '//*[@id="Sva75c"]//img[@src and @alt]'
-                ]
+                # Get image URL (try direct src first, then click for high-res)
+                img_url = img.get_attribute("src")
                 
-                img_url = None
-                for xpath in xpaths:
-                    try:
-                        large_img = driver.find_element(By.XPATH, xpath)
-                        img_url = large_img.get_attribute("src")
-                        if img_url and img_url.startswith("http") and "google" not in img_url:
-                            break
-                    except:
-                        continue
+                # Skip base64 or google internal images
+                if not img_url or img_url.startswith("data:") or "google" in img_url or "gstatic" in img_url:
+                    img.click()
+                    time.sleep(1.5)
+                    
+                    # Try high-res selectors
+                    hi_res_selectors = [
+                        "img.sFlh5c.pT0Scc",
+                        "img.sFlh5c",
+                        "img.n3VNCb",
+                        "img.iPVvYb",
+                        "img[jsname='HiaYvf']",
+                    ]
+                    
+                    for sel in hi_res_selectors:
+                        try:
+                            large_imgs = driver.find_elements(By.CSS_SELECTOR, sel)
+                            for large_img in large_imgs:
+                                url = large_img.get_attribute("src")
+                                if url and url.startswith("http") and "google" not in url and "gstatic" not in url:
+                                    img_url = url
+                                    break
+                            if img_url and img_url.startswith("http") and "google" not in img_url:
+                                break
+                        except:
+                            continue
                 
-                if not img_url or not img_url.startswith("http"):
+                if not img_url or not img_url.startswith("http") or "google" in img_url:
                     continue
                 
                 # 이미지 다운로드
@@ -149,16 +163,16 @@ def crawling_img(name, category, max_count=100):
                 
                 urllib.request.urlretrieve(img_url, filepath)
                 count += 1
-                print(f"  📥 [{count}/{max_count}] {filename}")
+                print(f"  [OK] [{count}/{max_count}] {filename}")
                 
             except Exception as e:
                 # 에러 무시하고 다음 이미지로
                 continue
         
-        print(f"✅ 완료: {name} → {count}장 저장됨")
+        print(f"[DONE] {name} -> {count} images saved")
         
     except Exception as e:
-        print(f"❌ 에러 발생: {e}")
+        print(f"[ERROR] {e}")
         
     finally:
         driver.quit()
@@ -215,42 +229,42 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     print("=" * 50)
-    print("🎭 상견례 얼굴상 테스트 - 이미지 크롤러")
+    print("[CRAWLER] Sanggyeonrye Face Test - Image Crawler")
     print("=" * 50)
     
     # 여자 연예인 크롤링
     if args.gender in ['female', 'all']:
         print("\n" + "=" * 50)
-        print("👩 [여자] 이미지 수집 시작...")
+        print("[FEMALE] Starting image collection...")
         print("=" * 50)
         
-        print("\n👍 [여자 프리패스상]")
+        print("\n[FEMALE FREEPASS]")
         for celeb in FEMALE_FREEPASS:
-            crawling_img(celeb, "female_프리패스상", max_count=args.count)
+            crawling_img(celeb, "female_freepass", max_count=args.count)
         
-        print("\n👎 [여자 문전박대상]")
+        print("\n[FEMALE MOONJEONBAKDAE]")
         for celeb in FEMALE_MOONJEONBAKDAE:
-            crawling_img(celeb, "female_문전박대상", max_count=args.count)
+            crawling_img(celeb, "female_moonjeonbakdae", max_count=args.count)
     
     # 남자 연예인 크롤링
     if args.gender in ['male', 'all']:
         print("\n" + "=" * 50)
-        print("👨 [남자] 이미지 수집 시작...")
+        print("[MALE] Starting image collection...")
         print("=" * 50)
         
-        print("\n👍 [남자 프리패스상]")
+        print("\n[MALE FREEPASS]")
         for celeb in MALE_FREEPASS:
-            crawling_img(celeb, "male_프리패스상", max_count=args.count)
+            crawling_img(celeb, "male_freepass", max_count=args.count)
         
-        print("\n👎 [남자 문전박대상]")
+        print("\n[MALE MOONJEONBAKDAE]")
         for celeb in MALE_MOONJEONBAKDAE:
-            crawling_img(celeb, "male_문전박대상", max_count=args.count)
+            crawling_img(celeb, "male_moonjeonbakdae", max_count=args.count)
     
     print("\n" + "=" * 50)
-    print("✅ 크롤링 완료!")
-    print("📁 저장 위치:")
-    print("   ./dataset/female_프리패스상/")
-    print("   ./dataset/female_문전박대상/")
-    print("   ./dataset/male_프리패스상/")
-    print("   ./dataset/male_문전박대상/")
+    print("[COMPLETE] Crawling finished!")
+    print("[FOLDER] Save locations:")
+    print("   ./dataset/female_freepass/")
+    print("   ./dataset/female_moonjeonbakdae/")
+    print("   ./dataset/male_freepass/")
+    print("   ./dataset/male_moonjeonbakdae/")
     print("=" * 50)
